@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 
 def renormlizer(data, max_val, min_val):
-    data = data * max_val
+    data = data * (max_val - min_val)
     data = data + min_val
     return data
 

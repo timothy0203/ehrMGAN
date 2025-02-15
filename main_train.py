@@ -7,18 +7,24 @@ from m3gan import m3gan
 from utils import renormlizer
 import timeit
 import argparse
+import pandas as pd
 
 def main (args):
    
     # prepare data for training GAN
-    with open(os.path.join('data/real/', args.dataset, 'vital_sign_24hrs.pkl'), 'rb') as f:
-        continuous_x = pickle.load(f)
+    # with open(os.path.join('data/real/', args.dataset, 'vital_sign_24hrs_p4.pkl'), 'rb') as f:
+    #     continuous_x = pickle.load(f)
+    continuous_x = np.loadtxt('data/real/mimic/vital_sign_24hrs.txt')
+    continuous_x = continuous_x.reshape(28344, 24, 104)
 
-    with open(os.path.join('data/real/', args.dataset, 'med_interv_24hrs.pkl'), 'rb') as f:
-        discrete_x = pickle.load(f)
+    # with open(os.path.join('data/real/', args.dataset, 'med_interv_24hrs_p4.pkl'), 'rb') as f:
+    #     discrete_x = pickle.load(f)
+    discrete_x = np.loadtxt('data/real/mimic/med_interv_24hrs.txt')
+    discrete_x = discrete_x.reshape(28344, 24, 14)
 
-    with open(os.path.join('data/real/', args.dataset, 'statics.pkl'), 'rb') as f:
-        statics_label = pickle.load(f)
+    # with open(os.path.join('data/real/', args.dataset, 'statics.pkl'), 'rb') as f:
+    #     statics_label = pickle.load(f)
+    statics_label = pd.read_csv('data/real/mimic/statics.csv')
     statics_label = np.asarray(statics_label)[:, 0].reshape([-1, 1])  
 
     # timeseries params:
