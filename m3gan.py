@@ -643,6 +643,17 @@ class m3gan(object):
                     d_gen_data, c_gen_data = self.generate_data(num_sample=self.c_data_sample.shape[0], labels=self.statics_label)
                 else:
                     d_gen_data, c_gen_data = self.generate_data(num_sample=self.c_data_sample.shape[0])
+                # saving the pre-trained model
+                save_path = os.path.join(self.checkpoint_dir, "pretrain_vae_{}".format(global_id))
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path)
+                self.save(global_id=global_id - 1, model_name='m3gan', checkpoint_dir=save_path)
+
+                # saving the trained model
+                trained_save_path = os.path.join(self.checkpoint_dir, "trained_model_{}".format(global_id))
+                if not os.path.exists(trained_save_path):
+                    os.makedirs(trained_save_path)
+                self.save(global_id=global_id, model_name='m3gan_trained', checkpoint_dir=trained_save_path)
                 np.savez(os.path.join(data_gen_path, "gen_data.npz"), c_gen_data=c_gen_data, d_gen_data=d_gen_data)
                 visualise_gan(continuous_x_random, c_gen_data, discrete_x_random, d_gen_data, inx=(e+1))
                 print('finish generated data saving in epoch ' + str(e))
