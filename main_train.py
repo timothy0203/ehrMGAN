@@ -8,25 +8,40 @@ from utils import renormlizer
 import timeit
 import argparse
 import pandas as pd
+# from tensorflow.keras.mixed_precision import experimental as mixed_precision
+
+# # Set the global policy to mixed precision
+# policy = mixed_precision.Policy('mixed_float16')
+# mixed_precision.set_policy(policy)
 
 def main (args):
+    # tf.keras.mixed_precision.set_global_policy('mixed_float16')
    
     # prepare data for training GAN
     # with open(os.path.join('data/real/', args.dataset, 'vital_sign_24hrs_p4.pkl'), 'rb') as f:
     #     continuous_x = pickle.load(f)
-    continuous_x = np.loadtxt('data/real/mimic/vital_sign_24hrs.txt')
-    continuous_x = continuous_x.reshape(28344, 24, 104)
+    patinet_num = 16062
+    # patinet_num = 36553
+    filename_postfix = '5_var'
+    continuous_x = np.loadtxt(f'data/real/mimic/vital_sign_24hrs_{filename_postfix}_mimiciv.txt')
+    continuous_x = continuous_x.reshape(patinet_num, 24, 5)
 
     # with open(os.path.join('data/real/', args.dataset, 'med_interv_24hrs_p4.pkl'), 'rb') as f:
     #     discrete_x = pickle.load(f)
-    discrete_x = np.loadtxt('data/real/mimic/med_interv_24hrs.txt')
-    discrete_x = discrete_x.reshape(28344, 24, 14)
+    discrete_x = np.loadtxt(f'data/real/mimic/med_interv_24hrs_{filename_postfix}_mimiciv.txt')
+    discrete_x = discrete_x.reshape(patinet_num, 24, 1)
 
     # with open(os.path.join('data/real/', args.dataset, 'statics.pkl'), 'rb') as f:
     #     statics_label = pickle.load(f)
-    statics_label = pd.read_csv('data/real/mimic/statics.csv')
+    statics_label = pd.read_csv(f'data/real/mimic/static_data_{filename_postfix}_mimiciv.csv')
     statics_label = np.asarray(statics_label)[:, 0].reshape([-1, 1])  
-
+    
+    subset_flag = False
+    subset_patinet_num = 1000
+    if subset_flag:
+        continuous_x = continuous_x[:subset_patinet_num]
+        discrete_x = discrete_x[:subset_patinet_num]
+        statics_label = statics_label[:subset_patinet_num]
     # timeseries params:
     time_steps = continuous_x.shape[1]
     c_dim = continuous_x.shape[2]
@@ -103,14 +118,59 @@ def main (args):
                     conditional=args.conditional, num_labels=args.num_labels,
                     statics_label=statics_label)
         model.build()
+
+        # Create a Saver object after the model is built
+        saver = tf.train.Saver()
+
+        # Check if there is an existing checkpoint
+        checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+        if checkpoint:
+            print("=========Restoring model from checkpoint:", checkpoint)
+            saver.restore(sess, checkpoint)
+        else:
+            print("No checkpoint found, initializing variables")
+            sess.run(tf.global_variables_initializer())
+
         model.train()
+
+        # Save the model periodically
+        # saver.save(sess, checkpoint_dir + '/model.ckpt', global_step=model.global_step)
+    # with tf.Session(config=run_config) as sess:
+    #     model = m3gan(sess=sess,
+    #                 batch_size=args.batch_size,
+    #                 time_steps=time_steps,
+    #                 num_pre_epochs=args.num_pre_epochs,
+    #                 num_epochs=args.num_epochs,
+    #                 checkpoint_dir=checkpoint_dir,
+    #                 epoch_ckpt_freq=args.epoch_ckpt_freq,
+    #                 epoch_loss_freq=args.epoch_loss_freq,
+    #                 # params for c
+    #                 c_dim=c_dim, c_noise_dim=c_noise_dim,
+    #                 c_z_size=c_z_size, c_data_sample=continuous_x,
+    #                 c_vae=c_vae, c_gan=c_gan,
+    #                 # params for d
+    #                 d_dim=d_dim, d_noise_dim=d_noise_dim,
+    #                 d_z_size=d_z_size, d_data_sample=discrete_x,
+    #                 d_vae=d_vae, d_gan=d_gan,
+    #                 # params for training
+    #                 d_rounds=args.d_rounds, g_rounds=args.g_rounds, v_rounds=args.v_rounds,
+    #                 v_lr_pre=args.v_lr_pre, v_lr=args.v_lr, g_lr=args.g_lr, d_lr=args.d_lr,
+    #                 alpha_re=args.alpha_re, alpha_kl=args.alpha_kl, alpha_mt=args.alpha_mt, 
+    #                 alpha_ct=args.alpha_ct, alpha_sm=args.alpha_sm,
+    #                 c_beta_adv=args.c_beta_adv, c_beta_fm=args.c_beta_fm, 
+    #                 d_beta_adv=args.d_beta_adv, d_beta_fm=args.d_beta_fm, 
+    #                 # input label
+    #                 conditional=args.conditional, num_labels=args.num_labels,
+    #                 statics_label=statics_label)
+    #     model.build()
+    #     model.train()
 
         # evaluation
         d_gen_data, c_gen_data = model.generate_data(num_sample=no_gen)
 
     # renormalize
-    min_val_con = np.load(os.path.join('data/real/', args.dataset, "norm_stats.npz"))["min_val"]
-    max_val_con = np.load(os.path.join('data/real/', args.dataset, "norm_stats.npz"))["max_val"]
+    min_val_con = np.load(os.path.join('data/real/', args.dataset, f"norm_stats_{filename_postfix}_mimiciv.npz"))["min_val"]
+    max_val_con = np.load(os.path.join('data/real/', args.dataset, f"norm_stats_{filename_postfix}_mimiciv.npz"))["max_val"]
     c_gen_data_renorm = renormlizer(c_gen_data, max_val_con, min_val_con)
 
     # create path for the generated data
@@ -129,7 +189,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--dataset', type=str, default="mimic", choices=['mimic','eicu','hirid'], help='The name of dataset used for training the networks.')
 
-    parser.add_argument('--batch_size', type=int, default=256, help='The batch size for training the model.')
+    parser.add_argument('--batch_size', type=int, default=1024, help='The batch size for training the model.')
+    # parser.add_argument('--batch_size', type=int, default=256, help='The batch size for training the model.')
     parser.add_argument('--num_pre_epochs', type=int, default=500, help='The number of epoches in pretraining the VAEs.')
     parser.add_argument('--num_epochs', type=int, default=800, help='The number of epoches in training the GANs.')
     parser.add_argument('--epoch_ckpt_freq', type=int, default=100, help='The frequency of epoches for saving models and synthetic data.')
