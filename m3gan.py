@@ -527,7 +527,7 @@ class m3gan(object):
             self.train_losses['d_disc'].append(contra_loss)
             self.train_losses['d_gen_adv'].append(self.d_gen_loss_adv)
             self.train_losses['d_gen_fm'].append(self.d_gen_loss_fm)   """
-    def print_progress(self, epoch, c_vae_loss, d_vae_loss, matching_loss, contra_loss, is_pretraining=True):
+    def print_progress(self, epoch, c_vae_loss, d_vae_loss, matching_loss, contra_loss, feed_dict=None, is_pretraining=True):
         # Convert tensor values to numpy
         c_vae_loss = float(c_vae_loss)
         d_vae_loss = float(d_vae_loss)
@@ -547,9 +547,9 @@ class m3gan(object):
             # Convert additional tensor values for training
             # d_gen_loss_adv = float(self.sess.run(self.d_gen_loss_adv))
             # d_gen_loss_fm = float(self.sess.run(self.d_gen_loss_fm))
-            if self.d_noise_dim > 0:
-                d_gen_loss_adv = float(self.sess.run(self.d_gen_loss_adv, feed_dict=self.feed_dict))
-                d_gen_loss_fm = float(self.sess.run(self.d_gen_loss_fm, feed_dict=self.feed_dict))
+            if feed_dict is not None and self.d_noise_dim > 0:
+                d_gen_loss_adv = float(self.sess.run(self.d_gen_loss_adv, feed_dict=feed_dict))
+                d_gen_loss_fm = float(self.sess.run(self.d_gen_loss_fm, feed_dict=feed_dict))
             else:
                 d_gen_loss_adv = 0.0
                 d_gen_loss_fm = 0.0
@@ -831,7 +831,7 @@ class m3gan(object):
                 c_gen_fm = float(c_gen_fm)
                 d_disc = float(d_disc)
                 
-                self.print_progress(e, c_disc, c_gen_adv, c_gen_fm, d_disc, is_pretraining=False)
+                self.print_progress(e, c_disc, c_gen_adv, c_gen_fm, d_disc, feed_dict=feed_dict, is_pretraining=False)
         # At the end of training
         print("Plotting loss curves...")
         self.plot_losses()
