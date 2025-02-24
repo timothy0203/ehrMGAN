@@ -48,11 +48,16 @@ def main (args):
     d_dim = discrete_x.shape[2]
     no_gen = continuous_x.shape[0]
 
-    shared_latent_dim = 25
+    # shared_latent_dim = 25
+    # c_z_size = shared_latent_dim
+    # c_noise_dim = int(c_dim/2)
+    # d_z_size = shared_latent_dim
+    # d_noise_dim = int(d_dim/2)
+    shared_latent_dim = 15
     c_z_size = shared_latent_dim
-    c_noise_dim = int(c_dim/2)
+    c_noise_dim = max(1, int(c_dim/2))
     d_z_size = shared_latent_dim
-    d_noise_dim = int(d_dim/2)
+    d_noise_dim = max(1, int(d_dim/2))
 
     # networks for continuousGAN
     c_vae = C_VAE_NET(batch_size=args.batch_size, time_steps=time_steps, dim=c_dim, z_dim=c_z_size,
