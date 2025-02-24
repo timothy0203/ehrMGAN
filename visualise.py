@@ -8,7 +8,7 @@ import os
 from utils import renormlizer
 import pickle
 
-def visualise_gan(data_continuous_real, data_continuous_syn, data_discrete_real, data_discrete_syn, inx, num_dim=12, num_plot=10, SAVE_PATH="logs/"):
+def visualise_gan(data_continuous_real, data_continuous_syn, data_discrete_real, data_discrete_syn, inx, num_dim=5, num_plot=10, SAVE_PATH="logs/"):
 
     # renorm
     DATA_PATH = "data/real/mimic/"
@@ -73,7 +73,7 @@ def visualise_gan(data_continuous_real, data_continuous_syn, data_discrete_real,
 
     fig.savefig(os.path.join(SAVE_PATH, 'visualise_gan_epoch_' + str(inx) + '.pdf'), format='pdf')
 
-def visualise_vae(data_continuous_real, data_continuous_syn, data_discrete_real, data_discrete_syn, inx, num_dim=8, num_plot=10, SAVE_PATH="logs/"):
+def visualise_vae(data_continuous_real, data_continuous_syn, data_discrete_real, data_discrete_syn, inx, num_dim=5, num_plot=10, SAVE_PATH="logs/"):
 
     # renorm
     DATA_PATH = "data/real/mimic/"
@@ -128,3 +128,23 @@ def visualise_vae(data_continuous_real, data_continuous_syn, data_discrete_real,
         sns.lineplot(ax=axes[1, i], data=df.T, marker='o', palette=sns.color_palette('Reds', n_colors=num_plot))
 
     fig.savefig(os.path.join(SAVE_PATH, 'visualise_vae_epoch_' + str(inx) + '.pdf'), format='pdf')
+
+    # # Add more descriptive titles for subplots
+    # for i in range(len(c_dim_list)):
+    #     axes[0, i].set_title(f'Real Continuous Feature {i+1}')
+    #     axes[1, i].set_title(f'Reconstructed Continuous Feature {i+1}')
+    
+    # for i in range(len(d_dim_list)):
+    #     axes[2, i].set_title(f'Real Discrete Feature {i+1}')
+    #     axes[3, i].set_title(f'Reconstructed Discrete Feature {i+1}')
+
+    # # Add global title
+    # fig.suptitle(f'VAE Reconstruction Results - Epoch {inx}', fontsize=16)
+    
+    # # Adjust layout
+    # plt.tight_layout()
+    
+    # # Save with higher DPI for better quality
+    # fig.savefig(os.path.join(SAVE_PATH, f'visualise_vae_epoch_{inx}.pdf'), 
+    #             format='pdf', dpi=300, bbox_inches='tight')
+    # plt.close(fig)

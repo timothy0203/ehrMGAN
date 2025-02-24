@@ -81,6 +81,16 @@ class m3gan(object):
         self.num_labels = num_labels
         self.conditional = conditional
 
+        # Add these to __init__
+        self.pretrain_losses = {
+            'epoch': [], 'cvae': [], 'dvae': [], 
+            'matching': [], 'contra': []
+        }
+        self.train_losses = {
+            'epoch': [], 'c_disc': [], 'c_gen_adv': [], 
+            'c_gen_fm': [], 'd_disc': [], 'd_gen_adv': [], 'd_gen_fm': []
+        }
+
     def build(self):
         self.build_tf_graph()
         self.build_loss()
@@ -463,8 +473,149 @@ class m3gan(object):
             tf.summary.scalar("d_generator_loss/d_generator", self.d_gen_loss))
         self.d_generator_summary = tf.summary.merge(self.d_generator_summary)
 
+        # Add training progress summary
+        self.progress_summary = tf.Summary()
+        self.progress_writer = tf.summary.FileWriter("logs/training_progress")
+
+        # # Add scalar summaries for monitoring
+        # def add_scalar_summary(value, tag):
+        #     summary = tf.Summary.Value(tag=tag, simple_value=value)
+        #     self.progress_summary.value.append(summary)
+
+        # # Update progress_summary in print_progress
+        # def print_progress(self, epoch, c_vae_loss, d_vae_loss, matching_loss, contra_loss, is_pretraining=True):
+        #     # ... existing print code ...
+            
+        #     # Add to TensorBoard
+        #     if is_pretraining:
+        #         add_scalar_summary(c_vae_loss, "pretrain/c_vae_loss")
+        #         add_scalar_summary(d_vae_loss, "pretrain/d_vae_loss")
+        #         add_scalar_summary(matching_loss, "pretrain/matching_loss")
+        #         add_scalar_summary(contra_loss, "pretrain/contra_loss")
+        #     else:
+        #         add_scalar_summary(c_vae_loss, "train/c_disc_loss")
+        #         add_scalar_summary(d_vae_loss, "train/c_gen_adv_loss")
+        #         add_scalar_summary(matching_loss, "train/c_gen_fm_loss")
+        #         add_scalar_summary(contra_loss, "train/d_disc_loss")
+            
+        #     self.progress_writer.add_summary(self.progress_summary, epoch)
+        #     self.progress_writer.flush()
+
     def gen_input_noise(self, num_sample, T, noise_dim):
         return np.random.uniform(size=[num_sample, T, noise_dim])
+
+    # Add this function at the beginning of the class
+    """ def print_progress(self, epoch, c_vae_loss, d_vae_loss, matching_loss, contra_loss, is_pretraining=True):
+        if is_pretraining:
+            print(f"pretraining epoch {epoch:03d}: loss_cvae: {c_vae_loss:.3f} | loss_dvae: {d_vae_loss:.3f} | "
+                f"loss_matching: {matching_loss:.3f} | loss_contra: {contra_loss:.3f} ")
+            # Save pretrain losses
+            self.pretrain_losses['epoch'].append(epoch)
+            self.pretrain_losses['cvae'].append(c_vae_loss)
+            self.pretrain_losses['dvae'].append(d_vae_loss)
+            self.pretrain_losses['matching'].append(matching_loss)
+            self.pretrain_losses['contra'].append(contra_loss)
+        else:
+            print(f"training epoch {epoch:03d}: loss_c_disc: {c_vae_loss:.3f} | loss_c_gen_adv: {d_vae_loss:.3f} | "
+                f"loss_c_gen_fm: {matching_loss:.3f} | loss_d_disc: {contra_loss:.3f} | "
+                f"loss_d_gen_adv: {self.d_gen_loss_adv:.3f} | loss_d_gen_fm: {self.d_gen_loss_fm:.3f}")
+            # Save train losses
+            self.train_losses['epoch'].append(epoch)
+            self.train_losses['c_disc'].append(c_vae_loss)
+            self.train_losses['c_gen_adv'].append(d_vae_loss)
+            self.train_losses['c_gen_fm'].append(matching_loss)
+            self.train_losses['d_disc'].append(contra_loss)
+            self.train_losses['d_gen_adv'].append(self.d_gen_loss_adv)
+            self.train_losses['d_gen_fm'].append(self.d_gen_loss_fm)   """
+    def print_progress(self, epoch, c_vae_loss, d_vae_loss, matching_loss, contra_loss, is_pretraining=True):
+        # Convert tensor values to numpy
+        c_vae_loss = float(c_vae_loss)
+        d_vae_loss = float(d_vae_loss)
+        matching_loss = float(matching_loss)
+        contra_loss = float(contra_loss)
+        
+        if is_pretraining:
+            print(f"pretraining epoch {epoch:03d}: loss_cvae: {c_vae_loss:.3f} | loss_dvae: {d_vae_loss:.3f} | "
+                f"loss_matching: {matching_loss:.3f} | loss_contra: {contra_loss:.3f} ")
+            # Save pretrain losses
+            self.pretrain_losses['epoch'].append(epoch)
+            self.pretrain_losses['cvae'].append(c_vae_loss)
+            self.pretrain_losses['dvae'].append(d_vae_loss)
+            self.pretrain_losses['matching'].append(matching_loss)
+            self.pretrain_losses['contra'].append(contra_loss)
+        else:
+            # Convert additional tensor values for training
+            # d_gen_loss_adv = float(self.sess.run(self.d_gen_loss_adv))
+            # d_gen_loss_fm = float(self.sess.run(self.d_gen_loss_fm))
+            if self.d_noise_dim > 0:
+                d_gen_loss_adv = float(self.sess.run(self.d_gen_loss_adv, feed_dict=self.feed_dict))
+                d_gen_loss_fm = float(self.sess.run(self.d_gen_loss_fm, feed_dict=self.feed_dict))
+            else:
+                d_gen_loss_adv = 0.0
+                d_gen_loss_fm = 0.0
+            
+            print(f"training epoch {epoch:03d}: loss_c_disc: {c_vae_loss:.3f} | loss_c_gen_adv: {d_vae_loss:.3f} | "
+                f"loss_c_gen_fm: {matching_loss:.3f} | loss_d_disc: {contra_loss:.3f} | "
+                f"loss_d_gen_adv: {d_gen_loss_adv:.3f} | loss_d_gen_fm: {d_gen_loss_fm:.3f}")
+            
+            # Save train losses
+            self.train_losses['epoch'].append(epoch)
+            self.train_losses['c_disc'].append(c_vae_loss)
+            self.train_losses['c_gen_adv'].append(d_vae_loss)
+            self.train_losses['c_gen_fm'].append(matching_loss)
+            self.train_losses['d_disc'].append(contra_loss)
+            self.train_losses['d_gen_adv'].append(d_gen_loss_adv)
+            self.train_losses['d_gen_fm'].append(d_gen_loss_fm)    
+    
+    def plot_losses(self):
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        
+        # Set style
+        sns.set_style("whitegrid")
+        
+        # Plot pretraining losses
+        if len(self.pretrain_losses['epoch']) > 0:
+            fig, ax = plt.subplots(figsize=(12, 6))
+            for key in ['cvae', 'dvae', 'matching', 'contra']:
+                ax.plot(self.pretrain_losses['epoch'], 
+                       self.pretrain_losses[key], 
+                       label=f'loss_{key}')
+            ax.set_xlabel('Epoch')
+            ax.set_ylabel('Loss')
+            ax.set_title('Pretraining Losses')
+            ax.legend()
+            plt.tight_layout()
+            plt.savefig('logs/pretraining_losses.pdf')
+            plt.close()
+
+        # Plot training losses
+        if len(self.train_losses['epoch']) > 0:
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+            
+            # Discriminator losses
+            for key in ['c_disc', 'd_disc']:
+                ax1.plot(self.train_losses['epoch'], 
+                        self.train_losses[key], 
+                        label=f'loss_{key}')
+            ax1.set_xlabel('Epoch')
+            ax1.set_ylabel('Loss')
+            ax1.set_title('Discriminator Losses')
+            ax1.legend()
+
+            # Generator losses
+            for key in ['c_gen_adv', 'c_gen_fm', 'd_gen_adv', 'd_gen_fm']:
+                ax2.plot(self.train_losses['epoch'], 
+                        self.train_losses[key], 
+                        label=f'loss_{key}')
+            ax2.set_xlabel('Epoch')
+            ax2.set_ylabel('Loss')
+            ax2.set_title('Generator Losses')
+            ax2.legend()
+            
+            plt.tight_layout()
+            plt.savefig('logs/training_losses.pdf')
+            plt.close()
 
     def train(self):
         self.summary_writer = tf.summary.FileWriter("logs/tf_summary", self.sess.graph)
@@ -535,6 +686,16 @@ class m3gan(object):
                 if ((pre + 1) % self.epoch_loss_freq == 0 or pre == self.num_pre_epochs - 1):
                     summary_result = self.sess.run(self.d_vae_summary, feed_dict=feed_dict)
                     self.summary_writer.add_summary(summary_result, global_id)
+
+                # Modify the train() function to add progress printing
+                # In the pretraining loop, after running the VAE operations:
+                if ((pre + 1) % self.epoch_loss_freq == 0 or pre == self.num_pre_epochs - 1):
+                    c_loss, d_loss, m_loss, ct_loss = self.sess.run(
+                        [self.c_vae_loss, self.d_vae_loss, self.vae_matching_loss, self.vae_contra_loss],
+                        feed_dict=feed_dict
+                    )
+                    self.print_progress(pre, c_loss, d_loss, m_loss, ct_loss)
+
 
                 global_id += 1
             
@@ -657,6 +818,28 @@ class m3gan(object):
                 np.savez(os.path.join(data_gen_path, "gen_data.npz"), c_gen_data=c_gen_data, d_gen_data=d_gen_data)
                 visualise_gan(continuous_x_random, c_gen_data, discrete_x_random, d_gen_data, inx=(e+1))
                 print('finish generated data saving in epoch ' + str(e))
+            
+            # In the training loop:
+            if ((e + 1) % self.epoch_loss_freq == 0 or e == self.num_epochs - 1):
+                c_disc, c_gen_adv, c_gen_fm, d_disc = self.sess.run(
+                    [self.continuous_d_loss, self.c_gen_loss_adv, self.c_gen_loss_fm, self.dicrete_d_loss],
+                    feed_dict=feed_dict
+                )
+                # Convert tensor values to numpy arrays
+                c_disc = float(c_disc)
+                c_gen_adv = float(c_gen_adv)
+                c_gen_fm = float(c_gen_fm)
+                d_disc = float(d_disc)
+                
+                self.print_progress(e, c_disc, c_gen_adv, c_gen_fm, d_disc, is_pretraining=False)
+        # At the end of training
+        print("Plotting loss curves...")
+        self.plot_losses()
+        
+        # Save loss values
+        np.savez('logs/training_history.npz', 
+                pretrain_losses=self.pretrain_losses,
+                train_losses=self.train_losses)
 
     def generate_data(self, num_sample, labels=None):
         d_gen_data = []
