@@ -356,12 +356,26 @@ class C_GAN_NET(object):
             self.g_rnn_network = MultilayerCells(cells=cells_list)
 
         # create initial states for multi-cell lstm
+        # initial_state = []
+        # for i in range(self.gen_num_layers):
+        #     state_ = tf.stack([tf.zeros([self.batch_size, self.gen_num_units]),
+        #                        tf.zeros([self.batch_size, self.gen_num_units])])
+        #     initial_state.append(state_)
+
+        # return initial_state
+        # Modified initialization with variance
         initial_state = []
         for i in range(self.gen_num_layers):
-            state_ = tf.stack([tf.zeros([self.batch_size, self.gen_num_units]),
-                               tf.zeros([self.batch_size, self.gen_num_units])])
+            state_ = tf.stack([
+                tf.random.normal([self.batch_size, self.gen_num_units], 
+                            mean=0.0, stddev=0.1),
+                tf.random.truncated_normal([self.batch_size, self.gen_num_units], 
+                                        mean=0.0, stddev=0.1)
+            ])
             initial_state.append(state_)
-
+        
+        # Add noise scaling for first timestep
+        self.g_input[0] = self.g_input[0] * tf.random.uniform([1], 0.8, 1.2)
         return initial_state
 
     def gen_Onestep(self, t, state):
@@ -434,12 +448,25 @@ class D_GAN_NET(object):
             self.g_rnn_network = MultilayerCells(cells=cells_list)
 
         # initial state for multi-cell lstm
+        # initial_state = []
+        # for i in range(self.gen_num_layers):
+        #     state_ = tf.stack([tf.zeros([self.batch_size, self.gen_num_units]),
+        #                        tf.zeros([self.batch_size, self.gen_num_units])])
+        #     initial_state.append(state_)
+
+        # return initial_state
         initial_state = []
         for i in range(self.gen_num_layers):
-            state_ = tf.stack([tf.zeros([self.batch_size, self.gen_num_units]),
-                               tf.zeros([self.batch_size, self.gen_num_units])])
+            state_ = tf.stack([
+                tf.random.normal([self.batch_size, self.gen_num_units], 
+                            mean=0.0, stddev=0.1),
+                tf.random.truncated_normal([self.batch_size, self.gen_num_units], 
+                                        mean=0.0, stddev=0.1)
+            ])
             initial_state.append(state_)
-
+        
+        # Add noise scaling for first timestep
+        self.g_input[0] = self.g_input[0] * tf.random.uniform([1], 0.8, 1.2)
         return initial_state
 
     def gen_Onestep(self, t, state):
