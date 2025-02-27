@@ -636,7 +636,7 @@ class m3gan(object):
         data_size = continuous_x.shape[0]
         num_batches = data_size // self.batch_size
 
-        tf.global_variables_initializer().run()
+        self.sess.run(tf.global_variables_initializer())
 
         # pretrain step
         print('start pretraining')

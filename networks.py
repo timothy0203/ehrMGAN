@@ -368,9 +368,9 @@ class C_GAN_NET(object):
         for i in range(self.gen_num_layers):
             state_ = tf.stack([
                 tf.random.normal([self.batch_size, self.gen_num_units], 
-                            mean=0.0, stddev=0.1),
+                            mean=0.5, stddev=0.4),
                 tf.random.truncated_normal([self.batch_size, self.gen_num_units], 
-                                        mean=0.0, stddev=0.1)
+                                        mean=0.5, stddev=0.4)
             ])
             initial_state.append(state_)
         
@@ -459,9 +459,9 @@ class D_GAN_NET(object):
         for i in range(self.gen_num_layers):
             state_ = tf.stack([
                 tf.random.normal([self.batch_size, self.gen_num_units], 
-                            mean=0.0, stddev=0.1),
+                            mean=0.5, stddev=0.4),
                 tf.random.truncated_normal([self.batch_size, self.gen_num_units], 
-                                        mean=0.0, stddev=0.1)
+                                        mean=0.5, stddev=0.4)
             ])
             initial_state.append(state_)
         
