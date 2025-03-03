@@ -1,0 +1,7 @@
+Metric,Continuous Data,Discrete Data
+KS Test p-value (avg),0.0,0.0
+Distribution Similarity (visual),See plots,See plots
+Discriminator AUC,0.9999998940357828,0.9620667176142623
+Correlation Structure,10.94574496993961,N/A
+Autocorrelation Structure,See plots,See plots
+Maximum Mean Discrepancy (MMD),Error,Error
